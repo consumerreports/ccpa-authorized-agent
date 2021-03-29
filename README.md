@@ -15,7 +15,7 @@ Dependencies:
 
 After setting up the environment variables as described below, run the following command:
 
-    $ docker-compose up
+    $ docker-compose up --build
 
 This will create a web server listening on port 5000. You may access it by
 visiting http://localhost:5000 in a web browser.
