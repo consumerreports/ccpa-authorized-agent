@@ -28,10 +28,15 @@ const messageTemplate = fs.readFileSync(
 
 exports.name = NAME;
 
-exports.challenge = async (responseUrl, member) => {
+exports.url = (responseUrl, member) => {
   const url = new URL(responseUrl);
   url.searchParams.set('name', NAME);
   url.searchParams.set('value', member.emailChallenge);
+  return url;
+};
+
+exports.challenge = async (responseUrl, member) => {
+  const url = exports.url(responseUrl, member)
   const message = mustache.render(messageTemplate, {url: url.href});
   const firstNewline = message.indexOf('\n');
   const subject = message.substr(0, firstNewline);

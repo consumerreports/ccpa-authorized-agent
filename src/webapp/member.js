@@ -9,7 +9,7 @@ const mustache = require('mustache');
 
 const sendEmail = require('./email-service');
 
-const {PUBLIC_ADDRESS, REVOKE_EMAIL_RECIPIENT} = process.env;
+const {PUBLIC_ADDRESS, REVOKE_EMAIL_RECIPIENT, DEBUG_FAKE_SERVICES} = process.env;
 const {emailVerification, phoneVerification} = require('./verification-schemes/');
 const {member: Member} = require('./models/');
 const handleAsync = require('./handle-async');
@@ -30,6 +30,12 @@ router.post('/sign-up', handleAsync(async (req, res) => {
   publicUrl.pathname = path.join(publicUrl.pathname, req.baseUrl, 'verify');
 
   emailVerification.challenge(publicUrl.href, member);
+
+  if (DEBUG_FAKE_SERVICES=='true' || DEBUG_FAKE_SERVICES=='True') {
+    const emailUrl = escape(emailVerification.url(publicUrl.href, member));
+    console.log('DEBUG_FAKE_SERVICES Flag is used. Displaying url: ' + emailUrl);
+    res.redirect('/?success=1&debug_email_url=' + emailUrl);
+  }
 
   res.redirect('/?success=1');
 }));
