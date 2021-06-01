@@ -9,6 +9,7 @@ const client = new okta.Client({
 const middleware = async (req, res, next) => {
   if (req.userinfo) {
     try {
+      // req.user in the handlers will have user context now!
       req.user = await client.getUser(req.userinfo.sub)
     } catch (error) {
       console.log(error)
