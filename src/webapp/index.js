@@ -8,8 +8,8 @@ const mustacheExpress = require('mustache-express');
 const helmet = require('helmet');
 
 // PAAS_COUPLING: Heroku provides the `PORT` environment variable.
-const {PORT, PUBLIC_ADDRESS} = process.env;
-const admin = require('./admin');
+const {PORT, PUBLIC_ADDRESS, HTTP_SESSION_KEY} = process.env;
+const {router: admin, oidc: oidc} = require('./admin');
 const member = require('./member');
 const {remindUnverified} = require('./verification-schemes/');
 const memberMountPoint = '/member';
@@ -33,14 +33,6 @@ app.use(cookieSession({
 }));
 
 const okta = require('./okta')
-const { ExpressOIDC } = require('@okta/oidc-middleware')
-const oidc = new ExpressOIDC({
-  issuer: `${process.env.OKTA_ORG_URL}/oauth2/default`,
-  client_id: process.env.OKTA_CLIENT_ID,
-  client_secret: process.env.OKTA_CLIENT_SECRET,
-  redirect_uri: `${PUBLIC_ADDRESS}/authorization-code/callback`,
-  scope: 'openid profile',
-})
 
 app.use(oidc.router)
 app.use(okta.middleware)
