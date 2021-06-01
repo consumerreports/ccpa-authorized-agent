@@ -3,6 +3,7 @@ const path = require('path');
 
 const debug = require('debug')('index');
 const express = require('express');
+const cookieSession = require('cookie-session');
 const mustacheExpress = require('mustache-express');
 const helmet = require('helmet');
 
@@ -25,6 +26,24 @@ const challengeResponseUrl = (() => {
  */
 const VERIFICATION_REMINDER_CHECK_PERIOD = 1000 * 60 * 10; // ten minutes
 const app = express();
+
+app.use(cookieSession({
+  name: 'session',
+  secret: HTTP_SESSION_KEY,
+}));
+
+const okta = require('./okta')
+const { ExpressOIDC } = require('@okta/oidc-middleware')
+const oidc = new ExpressOIDC({
+  issuer: `${process.env.OKTA_ORG_URL}/oauth2/default`,
+  client_id: process.env.OKTA_CLIENT_ID,
+  client_secret: process.env.OKTA_CLIENT_SECRET,
+  redirect_uri: `${PUBLIC_ADDRESS}/authorization-code/callback`,
+  scope: 'openid profile',
+})
+
+app.use(oidc.router)
+app.use(okta.middleware)
 
 app.set('views', './views');
 app.set('view engine', 'mustache');
