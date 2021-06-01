@@ -4,7 +4,17 @@ const cookieSession = require('cookie-session');
 
 const {member: Member} = require('./models/');
 const handleAsync = require('./handle-async');
-const {ADMIN_PASSWORD, HTTP_SESSION_KEY} = process.env;
+const {PUBLIC_ADDRESS, ADMIN_PASSWORD, HTTP_SESSION_KEY} = process.env;
+
+const okta = require('./okta')
+const { ExpressOIDC } = require('@okta/oidc-middleware')
+const oidc = new ExpressOIDC({
+  issuer: `${process.env.OKTA_ORG_URL}/oauth2/default`,
+  client_id: process.env.OKTA_CLIENT_ID,
+  client_secret: process.env.OKTA_CLIENT_SECRET,
+  redirect_uri: `${PUBLIC_ADDRESS}/authorization-code/callback`,
+  scope: 'openid profile',
+})
 
 const router = Router();
 
@@ -13,32 +23,10 @@ router.use(cookieSession({
   secret: HTTP_SESSION_KEY,
 }));
 
-router.post('/sign-in', (req, res, next) => {
-  if (req.body.password !== ADMIN_PASSWORD) {
-    next();
-    return;
-  }
+router.use(oidc.router)
+router.use(okta.middleware)
 
-  req.session.authenticated = true;
-  res.redirect('./');
-});
-
-router.get('/sign-out', (req, res) => {
-  delete req.session.authenticated;
-  res.redirect('./');
-});
-
-router.use((req, res, next) => {
-  if (req.session.authenticated) {
-    next();
-    return;
-  }
-
-  res.status(401);
-  res.render('admin/sign-in');
-});
-
-router.get('/', handleAsync(async (req, res) => {
+router.get('/', oidc.ensureAuthenticated(), handleAsync(async (req, res) => {
   res.render('admin/index', {members: await Member.findAll({ order: [['createdAt', 'ASC']] })});
 }));
 
