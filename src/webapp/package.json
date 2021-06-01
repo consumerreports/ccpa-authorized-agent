@@ -11,6 +11,8 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@okta/oidc-middleware": "^0.1.1",
+    "@okta/okta-sdk-nodejs": "^1.1.0",
     "base-64": "^1.0.0",
     "cookie-session": "^1.4.0",
     "debug": "^4.3.1",
