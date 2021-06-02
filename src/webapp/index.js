@@ -82,8 +82,10 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
-  debug(`Server initialized and listening on port ${PORT}.`);
+oidc.on('ready', () => {
+  app.listen(PORT, () => {
+    debug(`Server initialized and listening on port ${PORT}.`);
+  });
 });
 
 (async function remind() {
