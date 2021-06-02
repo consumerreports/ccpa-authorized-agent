@@ -20,4 +20,11 @@ router.get('/', oidc.ensureAuthenticated(), handleAsync(async (req, res) => {
   res.render('admin/index', {members: await Member.findAll({ order: [['createdAt', 'ASC']] })});
 }));
 
+// app.post('/sign-out', oidc.forceLogoutAndRevoke(), (req, res) => {/*nothing to do but let oid redirect*/});
+
+router.get('/sign-out', oidc.ensureAuthenticated(), handleAsync(async (req, res) => {
+  req.logout();
+  res.redirect('/');
+}));
+
 module.exports = {router: router, oidc: oidc};
