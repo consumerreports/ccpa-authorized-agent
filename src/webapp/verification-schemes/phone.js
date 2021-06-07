@@ -26,7 +26,7 @@ module.exports = {
   
   challenge: async member => {
     if (DEBUG_FAKE_SERVICES=='true' || DEBUG_FAKE_SERVICES=='True') {
-      console.log('DEBUG_FAKE_SERVICES Flag is used. Mot chalenging sms to phone #', member.phone);
+      console.log('DEBUG_FAKE_SERVICES Flag is used. Not chalenging sms to phone #', member.phone);
     } else {
       let formData = new FormData();
       formData.append('To', member.phone);
@@ -50,7 +50,7 @@ module.exports = {
 
   verify: async (member, smsCode) => {
     if (DEBUG_FAKE_SERVICES=='true' || DEBUG_FAKE_SERVICES=='True') {
-      console.log('DEBUG_FAKE_SERVICES Flag is used. Mot verifying sms to phone #', member.phone);
+      console.log('DEBUG_FAKE_SERVICES Flag is used. Not verifying sms to phone #', member.phone);
     } else {
       let formData = new FormData();
       formData.append('To', member.phone);

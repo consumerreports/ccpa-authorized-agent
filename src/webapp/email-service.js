@@ -10,7 +10,7 @@ const sendEmail = async ({ to, subject, html }) => {
   console.log('Sent email', { to, subject, html });
   // return mg.messages.create(MAILGUN_MESSAGING_DOMAIN, data);
   if (DEBUG_FAKE_SERVICES=='true' || DEBUG_FAKE_SERVICES=='True') {
-    console.log('DEBUG_FAKE_SERVICES Flag is used. Mot sending email');
+    console.log('DEBUG_FAKE_SERVICES Flag is used. Not sending email. Displaying the link on the console instead.');
     return;
   }
 
