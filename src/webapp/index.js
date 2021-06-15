@@ -51,7 +51,8 @@ app.use(memberMountPoint, member);
 
 app.get('/', (req, res) => {
   res.render('index', {
-    success: !!req.query.success
+    success: !!req.query.success,
+    debugEmailUrl: req.query.debug_email_url
   });
 });
 

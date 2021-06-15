@@ -19,49 +19,57 @@ const PHONE_CHALLENGE_RETRY_PERIOD = 24;
  */
 const PHONE_CHALLENGE_QUIT_DELAY = 72;
 
-const {TWILIO_SERVICE_DOMAIN, TWILIO_SERVICE_ID, TWILIO_SID, TWILIO_AUTH_TOKEN} = process.env;
+const {TWILIO_SERVICE_DOMAIN, TWILIO_SERVICE_ID, TWILIO_SID, TWILIO_AUTH_TOKEN, DEBUG_FAKE_SERVICES} = process.env;
 
 module.exports = {
   name: 'phone',
   
   challenge: async member => {
-    let formData = new FormData();
-    formData.append('To', member.phone);
-    formData.append('Channel', 'sms');
+    if (DEBUG_FAKE_SERVICES=='true' || DEBUG_FAKE_SERVICES=='True') {
+      console.log('DEBUG_FAKE_SERVICES Flag is used. Not chalenging sms to phone #', member.phone);
+    } else {
+      let formData = new FormData();
+      formData.append('To', member.phone);
+      formData.append('Channel', 'sms');
 
-    await fetch(
-      `${TWILIO_SERVICE_DOMAIN}/v2/Services/${TWILIO_SERVICE_ID}/Verifications`,
-      { 
-        method: 'POST', 
-        body: formData, 
-        headers: {
-          Authorization: `Basic ${base64.encode(`${TWILIO_SID}:${TWILIO_AUTH_TOKEN}`)}`
-        }
-      },
-    );
+      await fetch(
+        `${TWILIO_SERVICE_DOMAIN}/v2/Services/${TWILIO_SERVICE_ID}/Verifications`,
+        { 
+          method: 'POST', 
+          body: formData, 
+          headers: {
+            Authorization: `Basic ${base64.encode(`${TWILIO_SID}:${TWILIO_AUTH_TOKEN}`)}`
+          }
+        },
+      );
 
-    member.phoneChallengeAt = DateTime.local().toISO();
-    await member.save();
+      member.phoneChallengeAt = DateTime.local().toISO();
+      await member.save();
+    }
   },
 
   verify: async (member, smsCode) => {
-    let formData = new FormData();
-    formData.append('To', member.phone);
-    formData.append('Code', smsCode);
+    if (DEBUG_FAKE_SERVICES=='true' || DEBUG_FAKE_SERVICES=='True') {
+      console.log('DEBUG_FAKE_SERVICES Flag is used. Not verifying sms to phone #', member.phone);
+    } else {
+      let formData = new FormData();
+      formData.append('To', member.phone);
+      formData.append('Code', smsCode);
 
-    const rawResponse = await fetch(
-      `${TWILIO_SERVICE_DOMAIN}/v2/Services/${TWILIO_SERVICE_ID}/VerificationCheck`,
-      { 
-        method: 'POST', 
-        body: formData, 
-        headers: {
-          Authorization: `Basic ${base64.encode(`${TWILIO_SID}:${TWILIO_AUTH_TOKEN}`)}`
-        }
-      },
-    );
-    const response = await rawResponse.json();
-    if (!(response && response.status === 'approved')) {
-      return false;
+      const rawResponse = await fetch(
+        `${TWILIO_SERVICE_DOMAIN}/v2/Services/${TWILIO_SERVICE_ID}/VerificationCheck`,
+        { 
+          method: 'POST', 
+          body: formData, 
+          headers: {
+            Authorization: `Basic ${base64.encode(`${TWILIO_SID}:${TWILIO_AUTH_TOKEN}`)}`
+          }
+        },
+      );
+      const response = await rawResponse.json();
+      if (!(response && response.status === 'approved')) {
+        return false;
+      }
     }
 
     member.phoneVerified = true;
