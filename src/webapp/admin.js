@@ -7,7 +7,7 @@ const {PUBLIC_ADDRESS, ADMIN_PASSWORD, HTTP_SESSION_KEY} = process.env;
 
 const { ExpressOIDC } = require('@okta/oidc-middleware')
 const oidc = new ExpressOIDC({
-  issuer: `${process.env.OKTA_ORG_URL}/oauth2/default`,
+  issuer: `${process.env.OKTA_DOMAIN}/oauth2/default`,
   client_id: process.env.OKTA_CLIENT_ID,
   client_secret: process.env.OKTA_CLIENT_SECRET,
   redirect_uri: `${PUBLIC_ADDRESS}/authorization-code/callback`,
