@@ -3,7 +3,7 @@ const {Router} = require('express');
 
 const {member: Member} = require('./models/');
 const handleAsync = require('./handle-async');
-const {PUBLIC_ADDRESS, ADMIN_PASSWORD, HTTP_SESSION_KEY} = process.env;
+const {PUBLIC_ADDRESS, HTTP_SESSION_KEY} = process.env;
 
 const {oidc: oidc} = require('./okta.js');
 const router = Router();
