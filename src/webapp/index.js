@@ -9,10 +9,11 @@ const helmet = require('helmet');
 
 // PAAS_COUPLING: Heroku provides the `PORT` environment variable.
 const {PORT, PUBLIC_ADDRESS, HTTP_SESSION_KEY} = process.env;
-const {router: admin, oidc: oidc} = require('./admin');
+const {router: admin} = require('./admin');
 const member = require('./member');
 const {remindUnverified} = require('./verification-schemes/');
 const memberMountPoint = '/member';
+const {middleware: middleware, oidc: oidc} = require('./okta');
 
 const challengeResponseUrl = (() => {
   const url = new URL(PUBLIC_ADDRESS);
@@ -32,10 +33,8 @@ app.use(cookieSession({
   secret: HTTP_SESSION_KEY,
 }));
 
-const okta = require('./okta')
-
 app.use(oidc.router)
-app.use(okta.middleware)
+app.use(middleware)
 
 app.set('views', './views');
 app.set('view engine', 'mustache');
