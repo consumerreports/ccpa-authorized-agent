@@ -45,6 +45,12 @@ We are currently using DocuSign's ["power form"](https://www.docusign.com/featur
 
 If you're looking for a starting point you can use the example PoA, which is based on Consumer Reports' authorized agent program which we are keeping a copy of in markdown in the  [src/webapp/documents/authorization.md](https://github.com/bocoup/ccpa-authorized-agent/blob/main/src/webapp/documents/authorization.md). To swap out to a different e-signing service, create a reusable form link using that different service, and replace it in the above template. In the future this project may create its own signing tool, which would replace outside signing services with a home rolled or open source e signing solution using one of [California's Acceptable Technologies](https://www.sos.ca.gov/administration/regulations/current-regulations/technology/digital-signatures).
 
+### Okta
+
+We are currently using [Express OIDC](https://github.com/okta/okta-oidc-js/tree/master/packages/oidc-middleware#getting-started) modeled on [Okta's example integration](https://toolkit.okta.com/apps/okta-node-express-example/) which can be configured against a test account for local development. At the moment, the Okta integration is not an optional dependency because of how the library is structured, and a lack of time integrating it with the `fakeapi` service. See [PR #4](https://github.com/consumerreports/ccpa-authorized-agent/pull/4#issuecomment-865331647) for details on the integration, as well as the Environment Variables below. 
+
+If you are looking for help bootstrapping the Okta integration you can find a document titled "Setting up Okta credentials in CCPA-Authorized Agent" in the Access Agent folder in Google Drive, or follow the tutorial in the example integration linked above.
+
 ## Environment variables
 
 Before you can start the app, you must set up the environment variables. This will allow you to specify which Twilio or Mailgun accounts you would like to use. 
@@ -67,11 +73,15 @@ Name                         | Purpose
 `MAILGUN_MESSAGING_DOMAIN`   | access credential provided by [the Mailgun service](https://www.mailgun.com/); used to verify new members' e-mail addressed
 `MAILGUN_SENDER`             | address from which e-mail messages should be sent to members
 `MAILGUN_SERVICE_DOMAIN`     | domain to use in contacting [the Mailgun service](https://www.mailgun.com/); varies by region
-`TWILIO_SERVICE_ID`            | an ID referring to a single sign up form for SMS verification
-`TWILIO_SID`   | credential required by Twilio
-`TWILIO_AUTH_TOKEN`             | credential required by Twilio
-`TWILIO_SERVICE_DOMAIN`     | the domain used for Twilio's API. Can be overridden for testing.
+`TWILIO_SERVICE_ID`          | an ID referring to a single sign up form for SMS verification
+`TWILIO_SID`                 | credential required by Twilio
+`TWILIO_AUTH_TOKEN`          | credential required by Twilio
+`TWILIO_SERVICE_DOMAIN`      | the domain used for Twilio's API. Can be overridden for testing.
 `REVOKE_EMAIL_RECIPIENT`     | the email address to use when a member revokes their authorization
+`OKTA_DOMAIN`                | Okta "organization URL"
+`OKTA_CLIENT_ID`             | "public" half of *Okta OIDC* token pair
+`OKTA_CLIENT_SECRET`         | "private" half of *Okta OIDC* token pair
+`OKTA_USER_PROFILE_TOKEN`    | An *Okta API* token which is used to populate a request-body user object in Express Middleware
 
 ## Deployment workflow
 
