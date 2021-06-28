@@ -64,7 +64,6 @@ Name                         | Purpose
 -----------------------------|--------
 `DEBUG`                      | controls the verbosity of the application's logging output; refer to the documentation for [the open source Node module `debug`](https://www.npmjs.com/package/debug) for details on the semantics of this value
 `HTTP_SESSION_KEY`           | the encryption key to use for session information stored in HTTP cookies (The application uses HTTP cookies to persist information between requests. This includes a flag describing whether the user has previously been authenticated as an administrator.)
-`ADMIN_PASSWORD`             | the password that users must enter to authenticate as administrators and access the Member table
 `NODE_ENV`                   | controls the use of various runtime optimizations such as HTML template caching; set to `development` to disable all optimization; set to `production` to enable all optimizations.
 `PORT`                       | specifies the TCP port on which the application's HTTP server will listen for incoming requests
 `DATABASE_URL`               | the location of the PostgreSQL database; takes the form `postgres://username:password@host:port/database`
@@ -96,7 +95,6 @@ Dependencies:
        $ heroku apps:create ccpa-authorized-agent
        $ heroku config:set --app ccpa-authorized-agent NODE_ENV=production
        $ heroku config:set --app ccpa-authorized-agent HTTP_SESSION_KEY=some_hard_to_guess_value_f@ds9
-       $ heroku config:set --app ccpa-authorized-agent ADMIN_PASSWORD=open_sesame
        $ heroku config:set --app ccpa-authorized-agent PUBLIC_ADDRESS=https://ccpa-authorized-agent.herokuapp.com/
        $ heroku config:set --app ccpa-authorized-agent MAILGUN_API_KEY=xxx_key_xxx
        $ heroku config:set --app ccpa-authorized-agent MAILGUN_MESSAGING_DOMAIN=xxx_domain_xxx
