@@ -8,7 +8,7 @@ const mustacheExpress = require('mustache-express');
 const helmet = require('helmet');
 
 // PAAS_COUPLING: Heroku provides the `PORT` environment variable.
-const {PORT, PUBLIC_ADDRESS, HTTP_SESSION_KEY} = process.env;
+const {PORT, PUBLIC_ADDRESS, HTTP_SESSION_KEY, DEV_NO_OKTA} = process.env;
 const {router: admin} = require('./admin');
 const member = require('./member');
 const {remindUnverified} = require('./verification-schemes/');
@@ -81,20 +81,27 @@ app.use((err, req, res, next) => {
   });
 });
 
-oidc.on('ready', () => {
-  app.listen(PORT, () => {
-    debug(`Server initialized and listening on port ${PORT}.`);
-  });
-});
+var startWebFn = () => {
+    app.listen(PORT, () => {
+        debug(`Server initialized and listening on port ${PORT}.`);
+    });
+};
+
+if (DEV_NO_OKTA == undefined || DEV_NO_OKTA == "") {
+    debug("Starting server without auth...");
+    startWebFn();
+} else {
+    oidc.on('ready', startWebFn);
+}
 
 (async function remind() {
-  const results = await remindUnverified(challengeResponseUrl);
+    const results = await remindUnverified(challengeResponseUrl);
 
-  for (const result of results) {
-    if (result.status === 'rejected') {
-      debug(result.reason);
+    for (const result of results) {
+        if (result.status === 'rejected') {
+            debug(result.reason);
+        }
     }
-  }
 
-  setTimeout(remind, VERIFICATION_REMINDER_CHECK_PERIOD);
+    setTimeout(remind, VERIFICATION_REMINDER_CHECK_PERIOD);
 }());
