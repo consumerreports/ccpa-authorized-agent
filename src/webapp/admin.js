@@ -6,20 +6,21 @@ const {member: Member} = require('./models/');
 const handleAsync = require('./handle-async');
 const {PUBLIC_ADDRESS, HTTP_SESSION_KEY, DEV_NO_OKTA} = process.env;
 
-const {oidc: oidc} = require('./okta.js');
 const router = Router();
 
 // if DEV_NO_OKTA is in environment, the admin router will bypass auth...
-const authFnFactory = () => {
-    if (DEV_NO_OKTA == undefined || DEV_NO_OKTA == "") {
-        return oidc.ensureAuthenticated()
-    } else {
-        return (req, res, next) => {
-            debug("Bypassing admin auth");
-            return next();
-        }
+var authFnFactory = () => {
+    return (req, res, next) => {
+        debug("Bypassing admin auth");
+        return next();
     }
 };
+if (DEV_NO_OKTA == undefined || DEV_NO_OKTA == "") {
+    const {oidc: oidc} = require('./okta.js');
+    authFnFactory = () => {
+        return oidc.ensureAuthenticated()
+    };
+}
 
 router.get('/', authFnFactory(), handleAsync(async (req, res) => {
     res.render('admin/index', {members: await Member.findAll({ order: [['createdAt', 'ASC']] })});

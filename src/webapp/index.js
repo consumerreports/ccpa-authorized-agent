@@ -13,7 +13,6 @@ const {router: admin} = require('./admin');
 const member = require('./member');
 const {remindUnverified} = require('./verification-schemes/');
 const memberMountPoint = '/member';
-const {middleware: middleware, oidc: oidc} = require('./okta');
 
 const challengeResponseUrl = (() => {
   const url = new URL(PUBLIC_ADDRESS);
@@ -32,9 +31,6 @@ app.use(cookieSession({
   name: 'session',
   secret: HTTP_SESSION_KEY,
 }));
-
-app.use(oidc.router)
-app.use(middleware)
 
 app.set('views', './views');
 app.set('view engine', 'mustache');
@@ -81,17 +77,24 @@ app.use((err, req, res, next) => {
   });
 });
 
-var startWebFn = () => {
+const startWebFn = () => {
     app.listen(PORT, () => {
         debug(`Server initialized and listening on port ${PORT}.`);
     });
 };
 
+// if DEV_NO_OKTA is in environment, don't load okta middleware/router bits
 if (DEV_NO_OKTA == undefined || DEV_NO_OKTA == "") {
+    // not a fan of requiring this far down the file but holding my nose...
+    const {middleware: middleware, oidc: oidc} = require('./okta');
+
+    app.use(oidc.router)
+    app.use(middleware)
+
+    oidc.on('ready', startWebFn);
+} else {
     debug("Starting server without auth...");
     startWebFn();
-} else {
-    oidc.on('ready', startWebFn);
 }
 
 (async function remind() {
