@@ -2,37 +2,67 @@
 const okta = require('@okta/okta-sdk-nodejs')
 const { ExpressOIDC } = require('@okta/oidc-middleware')
 
-const makeClient = (orgUrl, token) => {
-    return new okta.Client({
-        orgUrl: orgUrl,
-        token: token,
-    })
+const {
+    OKTA_DOMAIN, OKTA_CLIENT_ID, OKTA_CLIENT_SECRET, OKTA_USER_PROFILE_TOKEN,
+    PUBLIC_ADDRESS, DEBUG_NO_OKTA, DEBUG_NO_SERVICES
+} = process.env;
+
+var OktaWrapper = function() {
+    this.client = null;
+    this.oidc = null;
+    this.ensureAuthenticated = null;
 };
 
-const middleware = async (req, res, next) => {
-    var client = makeClient(
-        process.env.OKTA_DOMAIN,
-        process.env.OKTA_USER_PROFILE_TOKEN
-    );
-    if (req.userinfo) {
-        try {
-            // req.user in the handlers will have user context now!
-            req.user = await client.getUser(req.userinfo.sub)
-        } catch (error) {
-            console.log(error)
-        }
-    }
+OktaWrapper.prototype.init = function() {
+    this.makeClient(OKTA_DOMAIN, OKTA_USER_PROFILE_TOKEN);
+    this.makeOidc();
+    this.getAuthFn();
+};
 
-    next()
+OktaWrapper.prototype.oktaEnabled = function() {
+    return DEBUG_NO_OKTA != "true" &&
+        DEBUG_NO_OKTA != "True" &&
+        DEBUG_NO_SERVICES != "true" &&
+        DEBUG_NO_SERVICES != "True";
+};
+
+OktaWrapper.prototype.makeClient = function(orgUrl, token) {
+    if (this.client == null)
+        this.client = new okta.Client({
+            orgUrl: orgUrl,
+            token: token,
+        });
+
+    return this.client;
+};
+
+OktaWrapper.prototype.makeOidc = function() {
+    if (this.oidc == null)
+        this.oidc = new ExpressOIDC({
+            issuer: `${OKTA_DOMAIN}/oauth2/default`,
+            client_id: OKTA_CLIENT_ID,
+            client_secret: OKTA_CLIENT_SECRET,
+            redirect_uri: `${PUBLIC_ADDRESS}/authorization-code/callback`,
+            scope: 'openid profile',
+        });
+
+
+    return this.oidc;
 }
 
-// wrap this in a function so that local instances can be mocked
-const oidc = new ExpressOIDC({
-    issuer: `${process.env.OKTA_DOMAIN}/oauth2/default`,
-    client_id: process.env.OKTA_CLIENT_ID,
-    client_secret: process.env.OKTA_CLIENT_SECRET,
-    redirect_uri: `${process.env.PUBLIC_ADDRESS}/authorization-code/callback`,
-    scope: 'openid profile',
-});
+OktaWrapper.prototype.getAuthFn = function() {
+    this.ensureAuthenticated = this.makeOidc().ensureAuthenticated;
 
-module.exports = { client, middleware, oidc }
+    if (!this.oktaEnabled()) {
+        this.ensureAuthenticated = () => {
+            return (req, res, next) => {
+                debug("Bypassing admin auth");
+                return next();
+            }
+        };
+    }
+
+    return this.ensureAuthenticated;
+};
+
+module.exports = OktaWrapper;

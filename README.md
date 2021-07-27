@@ -51,7 +51,7 @@ We are currently using [Express OIDC](https://github.com/okta/okta-oidc-js/tree/
 
 If you are looking for help bootstrapping the Okta integration you can find a document titled "Setting up Okta credentials in CCPA-Authorized Agent" in the Access Agent folder in Google Drive, or follow the tutorial in the example integration linked above. 
 
-In lieu of cargo-cult credentials, note that `DEV_NO_OKTA` can be added to the `.env` file to disable Okta authentication for local development. Practice care in production and know that there aren't integration tests for this at the moment. See [PR #4](https://github.com/consumerreports/ccpa-authorized-agent/pull/4#issuecomment-865331647) for details on the integration, as well as the Environment Variables below. 
+In lieu of cargo-cult credentials, note that `DEBUG_NO_OKTA` can be added to the `.env` file to disable Okta authentication for local development. Practice care in production and know that there aren't integration tests for this at the moment. See [PR #4](https://github.com/consumerreports/ccpa-authorized-agent/pull/4#issuecomment-865331647) for details on the integration, as well as the Environment Variables below. 
 
 ## Environment variables
 
@@ -79,7 +79,7 @@ Name                         | Purpose
 `TWILIO_AUTH_TOKEN`          | credential required by Twilio
 `TWILIO_SERVICE_DOMAIN`      | the domain used for Twilio's API. Can be overridden for testing.
 `REVOKE_EMAIL_RECIPIENT`     | the email address to use when a member revokes their authorization
-`DEV_NO_OKTA`                | Disable Okta authentication paths
+`DEBUG_NO_OKTA`              | Disable Okta authentication paths
 `OKTA_DOMAIN`                | Okta "organization URL"
 `OKTA_CLIENT_ID`             | "public" half of *Okta OIDC* token pair
 `OKTA_CLIENT_SECRET`         | "private" half of *Okta OIDC* token pair
