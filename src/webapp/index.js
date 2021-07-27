@@ -8,15 +8,14 @@ const mustacheExpress = require('mustache-express');
 const helmet = require('helmet');
 
 // PAAS_COUPLING: Heroku provides the `PORT` environment variable.
-const {PORT, PUBLIC_ADDRESS, HTTP_SESSION_KEY, DEBUG_NO_OKTA, DEBUG_NO_SERVICES} = process.env;
+const {PORT, PUBLIC_ADDRESS, HTTP_SESSION_KEY} = process.env;
+const makeAdminRouter = require('./admin');
 const member = require('./member');
 const {remindUnverified} = require('./verification-schemes/');
 const memberMountPoint = '/member';
 
 const OktaWrapper = require('./okta');
 const okta = new OktaWrapper();
-okta.init();
-const {router: admin} = require('./admin');
 
 const challengeResponseUrl = (() => {
     const url = new URL(PUBLIC_ADDRESS);
@@ -56,8 +55,13 @@ app.use(helmet({
 }));
 app.use('/static', express.static('static'));
 app.use(express.urlencoded({ extended: true }));
-app.use('/admin', admin);
 app.use(memberMountPoint, member);
+app.use('/admin', makeAdminRouter(okta));
+
+const OktaWrapper = require('./okta');
+const okta = new OktaWrapper();
+const admin = require('./admin')(okta);
+app.use('/admin', admin);
 
 app.get('/', (req, res) => {
     res.render('index', {
@@ -81,20 +85,22 @@ app.use((err, req, res, next) => {
     });
 });
 
-const startWebFn = () => {
+const startFn = () => {
     app.listen(PORT, () => {
         debug(`Server initialized and listening on port ${PORT}.`);
     });
-};
-
-// if DEBUG_NO_OKTA is in environment, don't load okta middleware/router bits
-if (okta.oktaEnabled()) {
-    app.use(okta.oidc.router);
-    okta.oidc.on('ready', startWebFn);
-} else {
-    debug("Starting server without auth...");
-    startWebFn();
 }
+if (okta.oktaEnabled()) {
+    app.use(okta.middleware())
+    app.use(okta.oidc().router)
+
+    okta.oidc().on('ready', () => {
+        startFn();
+    });
+} else {
+    startFn();
+}
+
 
 (async function remind() {
     const results = await remindUnverified(challengeResponseUrl);

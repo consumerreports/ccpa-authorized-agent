@@ -1,68 +1,94 @@
 'use strict';
-const okta = require('@okta/okta-sdk-nodejs')
-const { ExpressOIDC } = require('@okta/oidc-middleware')
+const okta = require('@okta/okta-sdk-nodejs');
+const { ExpressOIDC } = require('@okta/oidc-middleware');
+const debug = require('debug')('okta');
 
-const {
-    OKTA_DOMAIN, OKTA_CLIENT_ID, OKTA_CLIENT_SECRET, OKTA_USER_PROFILE_TOKEN,
-    PUBLIC_ADDRESS, DEBUG_NO_OKTA, DEBUG_NO_SERVICES
-} = process.env;
+const {DEBUG_NO_OKTA, DEBUG_NO_SERVICES} = process.env;
 
-var OktaWrapper = function() {
-    this.client = null;
-    this.oidc = null;
-    this.ensureAuthenticated = null;
+var Wrapper = function() {
+    this._client = null;
+    this._middleware = null;
+    this._oidc = null;
 };
 
-OktaWrapper.prototype.init = function() {
-    this.makeClient(OKTA_DOMAIN, OKTA_USER_PROFILE_TOKEN);
-    this.makeOidc();
-    this.getAuthFn();
+Wrapper.prototype.oktaEnabled = function () {
+    if (DEBUG_NO_OKTA == "true" || DEBUG_NO_OKTA == "True")
+        return false;
+    if (DEBUG_NO_SERVICES == "true" || DEBUG_NO_SERVICES == "True")
+        return false;
+
+    return true;
 };
 
-OktaWrapper.prototype.oktaEnabled = function() {
-    return DEBUG_NO_OKTA != "true" &&
-        DEBUG_NO_OKTA != "True" &&
-        DEBUG_NO_SERVICES != "true" &&
-        DEBUG_NO_SERVICES != "True";
-};
-
-OktaWrapper.prototype.makeClient = function(orgUrl, token) {
-    if (this.client == null)
-        this.client = new okta.Client({
-            orgUrl: orgUrl,
-            token: token,
+Wrapper.prototype.client = function() {
+    if (this._client == null) {
+        this._client = new okta.Client({
+            orgUrl: process.env.OKTA_DOMAIN,
+            token: process.env.OKTA_USER_PROFILE_TOKEN,
         });
-
-    return this.client;
-};
-
-OktaWrapper.prototype.makeOidc = function() {
-    if (this.oidc == null)
-        this.oidc = new ExpressOIDC({
-            issuer: `${OKTA_DOMAIN}/oauth2/default`,
-            client_id: OKTA_CLIENT_ID,
-            client_secret: OKTA_CLIENT_SECRET,
-            redirect_uri: `${PUBLIC_ADDRESS}/authorization-code/callback`,
-            scope: 'openid profile',
-        });
-
-
-    return this.oidc;
-}
-
-OktaWrapper.prototype.getAuthFn = function() {
-    this.ensureAuthenticated = this.makeOidc().ensureAuthenticated;
-
-    if (!this.oktaEnabled()) {
-        this.ensureAuthenticated = () => {
-            return (req, res, next) => {
-                debug("Bypassing admin auth");
-                return next();
-            }
-        };
     }
 
-    return this.ensureAuthenticated;
+    return this._client;
 };
 
-module.exports = OktaWrapper;
+Wrapper.prototype.oidc = function() {
+    if (this._oidc == null) {
+        this._oidc = new ExpressOIDC({
+            issuer: `${process.env.OKTA_DOMAIN}/oauth2/default`,
+            client_id: process.env.OKTA_CLIENT_ID,
+            client_secret: process.env.OKTA_CLIENT_SECRET,
+            redirect_uri: `${process.env.PUBLIC_ADDRESS}/authorization-code/callback`,
+            scope: 'openid profile',
+        });
+    }
+
+    return this._oidc;
+}
+
+Wrapper.prototype.middleware = function() {
+    if (this._middleware == null) {
+        this._middleware = async (req, res, next) => {
+            debug(`is_auth_fn ${req.isAuthenticated}`)
+            debug(`is_auth? ${(req.isAuthenticated && req.isAuthenticated())}`)
+            debug(`session? ${req.session}`)
+            debug(`session passport? ${Object.keys(req.session.passport)}`)
+            debug(`session user? ${req.session.user}`)
+
+            if (req.userinfo) {
+                try {
+                    // req.user in the handlers will have user context now!
+                    req.user = await this.client().getUser(req.userinfo.sub)
+                } catch (error) {
+                    console.log(error)
+                }
+            }
+            next()
+        }
+    }
+
+    debug(`using middleware? ${this._middleware}`)
+    return this._middleware;
+}
+
+Wrapper.prototype.authFunction = function() {
+    if (this._authFn == null) {
+        if (this.oktaEnabled()) {
+            this._authFn = this.oidc().ensureAuthenticated();
+        } else {
+            this._authFn = (req, res, next) => {
+                debug('Bypassing okta auth!');
+                next();
+            };
+        }
+    }
+
+    debug(`authFn = ${this._authFn}`);
+    return this._authFn;
+}
+
+Wrapper.prototype.ensureAuthenticated = function() {
+    debug(this.oidc().context);
+    return this.authFunction()
+};
+
+module.exports = Wrapper;
