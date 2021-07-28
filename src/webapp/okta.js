@@ -38,7 +38,7 @@ Wrapper.prototype.client = function() {
 Wrapper.prototype.oidc = function() {
     if (this._oidc == null) {
         this._oidc = new ExpressOIDC({
-            issuer: `${OKTA_DOMAIN}/oauth2/default`,
+            issuer: OKTA_DOMAIN,
             client_id: OKTA_CLIENT_ID,
             client_secret: OKTA_CLIENT_SECRET,
             appBaseUrl: PUBLIC_ADDRESS,
