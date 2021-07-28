@@ -108,6 +108,12 @@ Dependencies:
        $ heroku config:set --app ccpa-authorized-agent PGSSLMODE=require
        # Heroku-provided PostgreSQL uses self-signed certificate
        $ heroku config:set --app ccpa-authorized-agent NODE_TLS_REJECT_UNAUTHORIZED=0
+       
+       # Configure Okta credentials
+       $ heroku config:set --app ccpa-authorized-agent OKTA_DOMAIN=consumer.okta.com
+       $ heroku config:set --app ccpa-authorized-agent OKTA_CLIENT_ID=provide-this
+       $ heroku config:set --app ccpa-authorized-agent OKTA_CLIENT_SECRET=provide-this
+       $ heroku config:set --app ccpa-authorized-agent OKTA_USER_PROFILE_TOKEN=provide-this
 
        $ heroku addons:create --app ccpa-authorized-agent heroku-postgresql:hobby-dev
 
