@@ -90,7 +90,6 @@ Wrapper.prototype.authFunction = function() {
         }
     }
 
-    debug(`authFn = ${this._authFn}`);
     return this._authFn;
 }
 
