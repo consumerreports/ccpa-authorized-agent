@@ -103,6 +103,9 @@ if (okta.oktaEnabled()) {
     okta.oidc().on('ready', () => {
         startFn();
     });
+    okta.oidc().on('error', error => {
+        debug(`OIDC failed: ${error}`);
+    });
 } else {
     startFn();
 }
