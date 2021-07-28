@@ -3,7 +3,11 @@ const okta = require('@okta/okta-sdk-nodejs');
 const { ExpressOIDC } = require('@okta/oidc-middleware');
 const debug = require('debug')('okta');
 
-const {DEBUG_NO_OKTA, DEBUG_NO_SERVICES} = process.env;
+const {
+    DEBUG_NO_OKTA, DEBUG_NO_SERVICES, PUBLIC_ADDRESS,
+    OKTA_DOMAIN, OKTA_CLIENT_ID, OKTA_CLIENT_SECRET,
+} = process.env;
+
 
 var Wrapper = function() {
     this._client = null;
@@ -34,11 +38,20 @@ Wrapper.prototype.client = function() {
 Wrapper.prototype.oidc = function() {
     if (this._oidc == null) {
         this._oidc = new ExpressOIDC({
-            issuer: `${process.env.OKTA_DOMAIN}/oauth2/default`,
-            client_id: process.env.OKTA_CLIENT_ID,
-            client_secret: process.env.OKTA_CLIENT_SECRET,
-            redirect_uri: `${process.env.PUBLIC_ADDRESS}/authorization-code/callback`,
-            scope: 'openid profile',
+            issuer: `${OKTA_DOMAIN}/oauth2/default`,
+            client_id: OKTA_CLIENT_ID,
+            client_secret: OKTA_CLIENT_SECRET,
+            appBaseUrl: PUBLIC_ADDRESS,
+            scope: 'openid',
+            routes: {
+                loginCallback: {
+                    afterCallback: '/admin'
+                },
+                logout: {
+                    // handled by this module
+                    path: '/admin/sign-out'
+                },
+            }
         });
     }
 
@@ -48,16 +61,12 @@ Wrapper.prototype.oidc = function() {
 Wrapper.prototype.middleware = function() {
     if (this._middleware == null) {
         this._middleware = async (req, res, next) => {
-            debug(`is_auth_fn ${req.isAuthenticated}`)
             debug(`is_auth? ${(req.isAuthenticated && req.isAuthenticated())}`)
-            debug(`session? ${req.session}`)
-            debug(`session passport? ${Object.keys(req.session.passport)}`)
-            debug(`session user? ${req.session.user}`)
 
-            if (req.userinfo) {
+            if (req.userContext && req.userContext.userinfo) {
                 try {
                     // req.user in the handlers will have user context now!
-                    req.user = await this.client().getUser(req.userinfo.sub)
+                    req.user = await this.client().getUser(req.userContext.userinfo.sub)
                 } catch (error) {
                     console.log(error)
                 }
@@ -66,7 +75,6 @@ Wrapper.prototype.middleware = function() {
         }
     }
 
-    debug(`using middleware? ${this._middleware}`)
     return this._middleware;
 }
 
@@ -87,7 +95,6 @@ Wrapper.prototype.authFunction = function() {
 }
 
 Wrapper.prototype.ensureAuthenticated = function() {
-    debug(this.oidc().context);
     return this.authFunction()
 };
 

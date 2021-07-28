@@ -9,13 +9,9 @@ const helmet = require('helmet');
 
 // PAAS_COUPLING: Heroku provides the `PORT` environment variable.
 const {PORT, PUBLIC_ADDRESS, HTTP_SESSION_KEY} = process.env;
-const makeAdminRouter = require('./admin');
 const member = require('./member');
 const {remindUnverified} = require('./verification-schemes/');
 const memberMountPoint = '/member';
-
-const OktaWrapper = require('./okta');
-const okta = new OktaWrapper();
 
 const challengeResponseUrl = (() => {
     const url = new URL(PUBLIC_ADDRESS);
@@ -33,7 +29,21 @@ const app = express();
 app.use(cookieSession({
     name: 'session',
     secret: HTTP_SESSION_KEY,
+    resave: true,
+    saveUninitialized: false
 }));
+
+const OktaWrapper = require('./okta');
+const okta = new OktaWrapper();
+
+// https://devforum.okta.com/t/oidc-middleware-issues-ensureauthenticated-doesnt-work-and-userinfo-isnt-set/659/4
+// "The OIDC router sets up all the middleware that is needed to
+// later use oidc.ensureAuthenticated(). We will update our
+// documentation to make this clearer."
+if (okta.oktaEnabled()) {
+    app.use(okta.middleware())
+    app.use(okta.oidc().router)
+}
 
 app.set('views', './views');
 app.set('view engine', 'mustache');
@@ -53,15 +63,11 @@ app.use(helmet({
         directives: cspDirectives,
     }
 }));
+const MakeAdminRouter = require('./admin');
+app.use('/admin', MakeAdminRouter(okta));
 app.use('/static', express.static('static'));
 app.use(express.urlencoded({ extended: true }));
 app.use(memberMountPoint, member);
-app.use('/admin', makeAdminRouter(okta));
-
-const OktaWrapper = require('./okta');
-const okta = new OktaWrapper();
-const admin = require('./admin')(okta);
-app.use('/admin', admin);
 
 app.get('/', (req, res) => {
     res.render('index', {
@@ -89,7 +95,7 @@ const startFn = () => {
     app.listen(PORT, () => {
         debug(`Server initialized and listening on port ${PORT}.`);
     });
-}
+};
 if (okta.oktaEnabled()) {
     app.use(okta.middleware())
     app.use(okta.oidc().router)
@@ -100,7 +106,6 @@ if (okta.oktaEnabled()) {
 } else {
     startFn();
 }
-
 
 (async function remind() {
     const results = await remindUnverified(challengeResponseUrl);
