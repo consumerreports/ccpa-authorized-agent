@@ -1,45 +1,21 @@
 'use strict';
 const {Router} = require('express');
-const cookieSession = require('cookie-session');
+const debug = require('debug')('admin');
 
 const {member: Member} = require('./models/');
 const handleAsync = require('./handle-async');
-const {ADMIN_PASSWORD, HTTP_SESSION_KEY} = process.env;
 
-const router = Router();
+module.exports = function makeRouter(oktaWrapper) {
+    const router = Router();
 
-router.use(cookieSession({
-  name: 'session',
-  secret: HTTP_SESSION_KEY,
-}));
+    router.get('/', oktaWrapper.ensureAuthenticated(), handleAsync(async (req, res) => {
+        res.render('admin/index', {members: await Member.findAll({ order: [['createdAt', 'ASC']] })});
+    }));
 
-router.post('/sign-in', (req, res, next) => {
-  if (req.body.password !== ADMIN_PASSWORD) {
-    next();
-    return;
-  }
+    router.get('/sign-out', oktaWrapper.ensureAuthenticated(), handleAsync(async (req, res) => {
+        req.logout();
+        res.redirect('/');
+    }));
 
-  req.session.authenticated = true;
-  res.redirect('./');
-});
-
-router.get('/sign-out', (req, res) => {
-  delete req.session.authenticated;
-  res.redirect('./');
-});
-
-router.use((req, res, next) => {
-  if (req.session.authenticated) {
-    next();
-    return;
-  }
-
-  res.status(401);
-  res.render('admin/sign-in');
-});
-
-router.get('/', handleAsync(async (req, res) => {
-  res.render('admin/index', {members: await Member.findAll({ order: [['createdAt', 'ASC']] })});
-}));
-
-module.exports = router;
+    return router;
+};

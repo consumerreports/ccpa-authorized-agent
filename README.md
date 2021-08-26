@@ -45,6 +45,14 @@ We are currently using DocuSign's ["power form"](https://www.docusign.com/featur
 
 If you're looking for a starting point you can use the example PoA, which is based on Consumer Reports' authorized agent program which we are keeping a copy of in markdown in the  [src/webapp/documents/authorization.md](https://github.com/bocoup/ccpa-authorized-agent/blob/main/src/webapp/documents/authorization.md). To swap out to a different e-signing service, create a reusable form link using that different service, and replace it in the above template. In the future this project may create its own signing tool, which would replace outside signing services with a home rolled or open source e signing solution using one of [California's Acceptable Technologies](https://www.sos.ca.gov/administration/regulations/current-regulations/technology/digital-signatures).
 
+### Okta
+
+We are currently using [Express OIDC](https://github.com/okta/okta-oidc-js/tree/master/packages/oidc-middleware#getting-started) modeled on [Okta's example integration](https://toolkit.okta.com/apps/okta-node-express-example/) which can be configured against a test account for local development. 
+
+If you are looking for help bootstrapping the Okta integration you can find a document titled "Setting up Okta credentials in CCPA-Authorized Agent" in the Access Agent folder in Google Drive, or follow the tutorial in the example integration linked above. 
+
+In lieu of cargo-cult credentials, note that `DEBUG_NO_OKTA` can be added to the `.env` file to disable Okta authentication for local development. Practice care in production and know that there aren't integration tests for this at the moment. See [PR #4](https://github.com/consumerreports/ccpa-authorized-agent/pull/4#issuecomment-865331647) for details on the integration, as well as the Environment Variables below. 
+
 ## Environment variables
 
 Before you can start the app, you must set up the environment variables. This will allow you to specify which Twilio or Mailgun accounts you would like to use. 
@@ -58,7 +66,6 @@ Name                         | Purpose
 -----------------------------|--------
 `DEBUG`                      | controls the verbosity of the application's logging output; refer to the documentation for [the open source Node module `debug`](https://www.npmjs.com/package/debug) for details on the semantics of this value
 `HTTP_SESSION_KEY`           | the encryption key to use for session information stored in HTTP cookies (The application uses HTTP cookies to persist information between requests. This includes a flag describing whether the user has previously been authenticated as an administrator.)
-`ADMIN_PASSWORD`             | the password that users must enter to authenticate as administrators and access the Member table
 `NODE_ENV`                   | controls the use of various runtime optimizations such as HTML template caching; set to `development` to disable all optimization; set to `production` to enable all optimizations.
 `PORT`                       | specifies the TCP port on which the application's HTTP server will listen for incoming requests
 `DATABASE_URL`               | the location of the PostgreSQL database; takes the form `postgres://username:password@host:port/database`
@@ -67,11 +74,16 @@ Name                         | Purpose
 `MAILGUN_MESSAGING_DOMAIN`   | access credential provided by [the Mailgun service](https://www.mailgun.com/); used to verify new members' e-mail addressed
 `MAILGUN_SENDER`             | address from which e-mail messages should be sent to members
 `MAILGUN_SERVICE_DOMAIN`     | domain to use in contacting [the Mailgun service](https://www.mailgun.com/); varies by region
-`TWILIO_SERVICE_ID`            | an ID referring to a single sign up form for SMS verification
-`TWILIO_SID`   | credential required by Twilio
-`TWILIO_AUTH_TOKEN`             | credential required by Twilio
-`TWILIO_SERVICE_DOMAIN`     | the domain used for Twilio's API. Can be overridden for testing.
+`TWILIO_SERVICE_ID`          | an ID referring to a single sign up form for SMS verification
+`TWILIO_SID`                 | credential required by Twilio
+`TWILIO_AUTH_TOKEN`          | credential required by Twilio
+`TWILIO_SERVICE_DOMAIN`      | the domain used for Twilio's API. Can be overridden for testing.
 `REVOKE_EMAIL_RECIPIENT`     | the email address to use when a member revokes their authorization
+`DEBUG_NO_OKTA`              | Disable Okta authentication paths
+`OKTA_DOMAIN`                | Okta "organization URL"
+`OKTA_CLIENT_ID`             | "public" half of *Okta OIDC* token pair
+`OKTA_CLIENT_SECRET`         | "private" half of *Okta OIDC* token pair
+`OKTA_USER_PROFILE_TOKEN`    | An *Okta API* token which is used to populate a request-body user object in Express Middleware
 
 ## Deployment workflow
 
@@ -86,8 +98,7 @@ Dependencies:
        $ heroku apps:create ccpa-authorized-agent
        $ heroku config:set --app ccpa-authorized-agent NODE_ENV=production
        $ heroku config:set --app ccpa-authorized-agent HTTP_SESSION_KEY=some_hard_to_guess_value_f@ds9
-       $ heroku config:set --app ccpa-authorized-agent ADMIN_PASSWORD=open_sesame
-       $ heroku config:set --app ccpa-authorized-agent PUBLIC_ADDRESS=https://ccpa-authorized-agent.herokuapp.com/
+       $ heroku config:set --app ccpa-authorized-agent PUBLIC_ADDRESS=https://ccpa-authorized-agent.herokuapp.com
        $ heroku config:set --app ccpa-authorized-agent MAILGUN_API_KEY=xxx_key_xxx
        $ heroku config:set --app ccpa-authorized-agent MAILGUN_MESSAGING_DOMAIN=xxx_domain_xxx
        $ heroku config:set --app ccpa-authorized-agent MAILGUN_SENDER=robot@example.com
@@ -97,6 +108,12 @@ Dependencies:
        $ heroku config:set --app ccpa-authorized-agent PGSSLMODE=require
        # Heroku-provided PostgreSQL uses self-signed certificate
        $ heroku config:set --app ccpa-authorized-agent NODE_TLS_REJECT_UNAUTHORIZED=0
+       
+       # Configure Okta credentials
+       $ heroku config:set --app ccpa-authorized-agent OKTA_DOMAIN=consumer.okta.com
+       $ heroku config:set --app ccpa-authorized-agent OKTA_CLIENT_ID=provide-this
+       $ heroku config:set --app ccpa-authorized-agent OKTA_CLIENT_SECRET=provide-this
+       $ heroku config:set --app ccpa-authorized-agent OKTA_USER_PROFILE_TOKEN=provide-this
 
        $ heroku addons:create --app ccpa-authorized-agent heroku-postgresql:hobby-dev
 
