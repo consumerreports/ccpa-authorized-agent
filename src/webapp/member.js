@@ -44,42 +44,42 @@ router.post('/sign-up', handleAsync(async (req, res) => {
 }));
 
 router.get('/verify', handleAsync(async (req, res) => {
-    const member = await Member.findOne({
-      where: {
-        emailChallenge: req.query.value
-      }
-    });
-
-    if (!await emailVerification.verify(req.query.value)) {
-      throw new Error('Verification failed.');
+  const member = await Member.findOne({
+    where: {
+      emailChallenge: req.query.value
     }
+  });
 
-    phoneVerification.challenge(member);
+  if (!await emailVerification.verify(req.query.value)) {
+    throw new Error('Verification failed.');
+  }
 
-    res.render('member/verify');
+  phoneVerification.challenge(member);
+
+  res.render('member/verify');
 }));
 
 router.post('/verify-phone-code', handleAsync(async (req, res) => {
-    const member = await Member.findOne({
-      where: {
-        emailChallenge: req.query.emailChallenge
-      }
-    });
-
-    if (!await phoneVerification.verify(member, req.query.smsCode)) {
-      throw new Error('Verification failed.');
+  const member = await Member.findOne({
+    where: {
+      emailChallenge: req.query.emailChallenge
     }
+  });
 
-    const messageTemplate = fs.readFileSync(
-      __dirname + '/views/member/authorization-email.mustache', 'utf-8'
-    );
-    const message = mustache.render(messageTemplate);
-    const firstNewline = message.indexOf('\n');
-    const subject = message.substr(0, firstNewline);
-    const html = message.substr(firstNewline);
-    await sendEmail({ to: member.email, subject, html });
+  if (!await phoneVerification.verify(member, req.query.smsCode)) {
+    throw new Error('Verification failed.');
+  }
 
-    res.json({ success: true });
+  const messageTemplate = fs.readFileSync(
+    __dirname + '/views/member/authorization-email.mustache', 'utf-8'
+  );
+  const message = mustache.render(messageTemplate);
+  const firstNewline = message.indexOf('\n');
+  const subject = message.substr(0, firstNewline);
+  const html = message.substr(firstNewline);
+  await sendEmail({ to: member.email, subject, html });
+
+  res.json({ success: true });
 }));
 
 router.post('/revoke-authorization', handleAsync(async (req, res) => {
