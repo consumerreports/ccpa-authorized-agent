@@ -18,7 +18,7 @@ const {studyFullCheck} = require('./study-full');
 const router = Router();
 
 router.post('/sign-up', handleAsync(async (req, res) => {
-  studyFullCheck(req, res, () => {
+  studyFullCheck(req, res, async () => {
     const member = await Member.create({
       firstName: req.body['first-name'],
       lastName: req.body['last-name'],
