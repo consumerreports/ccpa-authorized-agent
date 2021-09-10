@@ -13,31 +13,34 @@ const {PUBLIC_ADDRESS, REVOKE_EMAIL_RECIPIENT, DEBUG_FAKE_SERVICES} = process.en
 const {emailVerification, phoneVerification} = require('./verification-schemes/');
 const {member: Member} = require('./models/');
 const handleAsync = require('./handle-async');
+const {studyFullCheck} = require('./study-full');
 
 const router = Router();
 
 router.post('/sign-up', handleAsync(async (req, res) => {
-  const member = await Member.create({
-    firstName: req.body['first-name'],
-    lastName: req.body['last-name'],
-    streetAddress: req.body['address-street'],
-    city: req.body['address-city'],
-    zipcode: req.body['address-zipcode'],
-    email: req.body.email,
-    phone: phone(req.body.phone)[0],
+  studyFullCheck(req, res, async () => {
+    const member = await Member.create({
+      firstName: req.body['first-name'],
+      lastName: req.body['last-name'],
+      streetAddress: req.body['address-street'],
+      city: req.body['address-city'],
+      zipcode: req.body['address-zipcode'],
+      email: req.body.email,
+      phone: phone(req.body.phone)[0],
+    });
+    const publicUrl = new URL(PUBLIC_ADDRESS);
+    publicUrl.pathname = path.join(publicUrl.pathname, req.baseUrl, 'verify');
+
+    emailVerification.challenge(publicUrl.href, member);
+
+    if (DEBUG_FAKE_SERVICES=='true' || DEBUG_FAKE_SERVICES=='True') {
+      const emailUrl = escape(emailVerification.url(publicUrl.href, member));
+      console.log('DEBUG_FAKE_SERVICES Flag is used. Displaying url: ' + emailUrl);
+      res.redirect('/?success=1&debug_email_url=' + emailUrl);
+    }
+
+    res.redirect('/?success=1');
   });
-  const publicUrl = new URL(PUBLIC_ADDRESS);
-  publicUrl.pathname = path.join(publicUrl.pathname, req.baseUrl, 'verify');
-
-  emailVerification.challenge(publicUrl.href, member);
-
-  if (DEBUG_FAKE_SERVICES=='true' || DEBUG_FAKE_SERVICES=='True') {
-    const emailUrl = escape(emailVerification.url(publicUrl.href, member));
-    console.log('DEBUG_FAKE_SERVICES Flag is used. Displaying url: ' + emailUrl);
-    res.redirect('/?success=1&debug_email_url=' + emailUrl);
-  }
-
-  res.redirect('/?success=1');
 }));
 
 router.get('/verify', handleAsync(async (req, res) => {
@@ -102,5 +105,5 @@ router.post('/revoke-authorization', handleAsync(async (req, res) => {
   res.json({ success: true });
 }));
 
- 
+
 module.exports = router;

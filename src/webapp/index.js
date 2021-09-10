@@ -13,6 +13,8 @@ const member = require('./member');
 const {remindUnverified} = require('./verification-schemes/');
 const memberMountPoint = '/member';
 
+const {studyFullCheck} = require('./study-full');
+
 const challengeResponseUrl = (() => {
     const url = new URL(PUBLIC_ADDRESS);
     url.pathname = path.join(url.pathname, memberMountPoint, 'verify');
@@ -70,10 +72,16 @@ app.use(express.urlencoded({ extended: true }));
 app.use(memberMountPoint, member);
 
 app.get('/', (req, res) => {
-    res.render('index', {
-        success: !!req.query.success,
-        debugEmailUrl: req.query.debug_email_url
+    studyFullCheck(req, res, () => {
+        return res.render('index', {
+            success: !!req.query.success,
+            debugEmailUrl: req.query.debug_email_url
+        });
     });
+});
+
+app.get('/faq', (req, res) => {
+    return res.render('faq');
 });
 
 app.use((err, req, res, next) => {
