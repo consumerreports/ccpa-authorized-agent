@@ -80,6 +80,10 @@ app.get('/', (req, res) => {
     });
 });
 
+app.get('/faq', (req, res) => {
+    return res.render('faq');
+});
+
 app.use((err, req, res, next) => {
     console.log('res.headersSent:', res.headersSent);
     if (res.headersSent) {
