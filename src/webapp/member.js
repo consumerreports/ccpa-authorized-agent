@@ -70,7 +70,9 @@ router.post('/verify-phone-code', handleAsync(async (req, res) => {
   const messageTemplate = fs.readFileSync(
     __dirname + '/views/member/authorization-email.mustache', 'utf-8'
   );
-  const message = mustache.render(messageTemplate);
+  const message = mustache.render(messageTemplate, {
+	  onboardID: member.getDataValue('id'),
+  });
   const firstNewline = message.indexOf('\n');
   const subject = message.substr(0, firstNewline);
   const html = message.substr(firstNewline);
