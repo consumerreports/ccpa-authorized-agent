@@ -35,17 +35,17 @@ app.use(cookieSession({
     saveUninitialized: false
 }));
 
-const OktaWrapper = require('./okta');
-const okta = new OktaWrapper();
+// const OktaWrapper = require('./okta');
+// const okta = new OktaWrapper();
 
 // https://devforum.okta.com/t/oidc-middleware-issues-ensureauthenticated-doesnt-work-and-userinfo-isnt-set/659/4
 // "The OIDC router sets up all the middleware that is needed to
 // later use oidc.ensureAuthenticated(). We will update our
 // documentation to make this clearer."
-if (okta.oktaEnabled()) {
-    app.use(okta.middleware())
-    app.use(okta.oidc().router)
-}
+// if (okta.oktaEnabled()) {
+//     app.use(okta.middleware())
+//     app.use(okta.oidc().router)
+// }
 
 app.set('views', './views');
 app.set('view engine', 'mustache');
@@ -65,8 +65,7 @@ app.use(helmet({
         directives: cspDirectives,
     }
 }));
-const MakeAdminRouter = require('./admin');
-app.use('/admin', MakeAdminRouter(okta));
+
 app.use('/static', express.static('static'));
 app.use(express.urlencoded({ extended: true }));
 app.use(memberMountPoint, member);
@@ -104,19 +103,8 @@ const startFn = () => {
         debug(`Server initialized and listening on port ${PORT}.`);
     });
 };
-if (okta.oktaEnabled()) {
-    app.use(okta.middleware())
-    app.use(okta.oidc().router)
 
-    okta.oidc().on('ready', () => {
-        startFn();
-    });
-    okta.oidc().on('error', error => {
-        debug(`OIDC failed: ${error}`);
-    });
-} else {
-    startFn();
-}
+startFn();
 
 (async function remind() {
     const results = await remindUnverified(challengeResponseUrl);
